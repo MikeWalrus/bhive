@@ -141,17 +141,20 @@ int perf_event_open(struct perf_event_attr *hw_event,
 void restart_child(pid_t pid, void *restart_addr, void *fault_addr, int shm_fd) {
   LOG("RESTARTING AT %p, fault addr = %p\n", restart_addr, fault_addr);
   struct user_regs_struct regs;
-  ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-  perror("get regs");
+  if (ptrace(PTRACE_GETREGS, pid, NULL, &regs)) {
+    perror("get regs");
+  }
   regs.rip = (unsigned long)restart_addr;
   regs.rax = (unsigned long)fault_addr;
   regs.r11 = shm_fd;
   regs.r12 = MAP_SHARED;
   regs.r13 = PROT_READ|PROT_WRITE;
-  ptrace(PTRACE_SETREGS, pid, NULL, &regs);
-  perror("set regs");
-  ptrace(PTRACE_CONT, pid, NULL, NULL);
-  perror("cont");
+  if (ptrace(PTRACE_SETREGS, pid, NULL, &regs)) {
+    perror("set regs");
+  }
+  if (ptrace(PTRACE_CONT, pid, NULL, NULL)) {
+    perror("cont");
+  }
 }
 
 // emit inst to do `mov rcx, val'
