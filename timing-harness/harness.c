@@ -105,6 +105,11 @@ struct perf_event_attr ctx_swtch_attr = {
   .config = PERF_COUNT_SW_CONTEXT_SWITCHES,
   .exclude_idle = 0
 };
+struct perf_event_attr cpu_cycle_attr = {
+  .type = PERF_TYPE_HARDWARE,
+  .config = PERF_COUNT_HW_CPU_CYCLES,
+  .exclude_kernel = 1
+};
 
 char x;
 
@@ -289,7 +294,13 @@ struct pmc_counters *measure(
     int icache_misses_idx = ctx.buf->index - 1;
     LOG("ICACHE IDX = %d\n", ctx.buf->index);
 
-    int ret = rdpmc_open_attr(&ctx_swtch_attr, &ctx, 0);
+    int ret = rdpmc_open_attr(&cpu_cycle_attr, &ctx, 0);
+    if (ret != 0) {
+      LOG("unable to get CPU cycles\n");
+      abort();
+    }
+
+    ret = rdpmc_open_attr(&ctx_swtch_attr, &ctx, 0);
     if (ret != 0) {
       LOG("unable to count context switches\n");
       abort();
